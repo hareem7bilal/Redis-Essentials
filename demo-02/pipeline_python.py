@@ -1,7 +1,23 @@
 import redis
 import time
 
-redisObj = redis.Redis(host='localhost', port=6379, db=0)
+def connect_to_redis(max_retries=3, retry_delay=2):
+    for attempt in range(max_retries):
+        try:
+            redisObj = redis.Redis(host='localhost', port=6379, db=0)
+            redisObj.ping()  # Test the connection
+            print("Successfully connected to Redis")
+            return redisObj
+        except redis.exceptions.ConnectionError as e:
+            print(f"Connection attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print("Max retries reached. Could not connect to Redis.")
+                raise
+
+redisObj = connect_to_redis()
 pipeObj = redisObj.pipeline()
 
 pipeObj.set("Name", "Jack")
